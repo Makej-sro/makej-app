@@ -1,0 +1,4 @@
+# Appka ani dashboard nemají co dělat ve vyhledávání — jsou za přihlášením.
+# Obsah pro vyhledávače je na makej.eu.
+User-agent: *
+Disallow: /

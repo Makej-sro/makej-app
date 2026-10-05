@@ -95,6 +95,20 @@
     if (s != null) window.mkAuthUloziste.setItem(KLIC, s);
   };
 
+  // ── Přístupová brána před spuštěním ──
+  // Klíč z přihlašovacího okna na makej.eu musí znát i appka na app.makej.eu,
+  // jinak by ho po přesměrování chtěla znovu. Proto cookie pro celou doménu,
+  // ne sessionStorage — ten patří jednomu původu. Bez platnosti, takže zmizí
+  // se zavřením prohlížeče, jak se u brány čekalo i dřív.
+  var BRANA = 'makej-brana';
+  window.mkBrana = {
+    precti: function () {
+      var h = vsechny()[BRANA];
+      return h == null ? null : decodeURIComponent(h);
+    },
+    uloz: function (hodnota) { zapisCookie(BRANA, encodeURIComponent(hodnota), false); },
+  };
+
   // Jednorázový přesun ze starého localStorage, ať se nikdo neodhlásí.
   try {
     var ls = window.localStorage;
