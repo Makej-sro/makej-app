@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <!-- Souhlas s cookies (consent.js). Výchozí stav Google Consent Mode v2 = vše
+       odepřeno a MUSÍ být první skript v hlavičce. Google Analytics se načítá až
+       po souhlasu z consent.js — bez něj na Google neodejde jediný požadavek. -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', functionality_storage: 'denied', personalization_storage: 'denied', security_storage: 'granted', wait_for_update: 500 });
+    gtag('set', 'ads_data_redaction', true);
+  </script>
+  <link rel="stylesheet" href="/consent.css?v=3" />
+  <script src="/consent.js?v=5" defer></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Makej — přihlášení</title>
+  <meta name="description" content="Přihlášení do firemního dashboardu a aplikace Makej!" />
+  <!-- Vstup do appky nepatří do výsledků hledání — rozcestník je na makej.eu. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <!-- Přechodová modrá do dashboardu. STEJNÝ soubor jako na makej.eu i v zámku
+       dashboardu, proto se při přechodu nic nehýbe. -->
+  <link rel="stylesheet" href="/nahravani.css?v=8" />
+
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/LeagueSpartan-Variable.woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/pamet-prihlaseni.js?v=4"></script>
+
+  <style>
+    /* ═══════════ PŘIHLÁŠENÍ NA app.makej.eu ═══════════
+       Kdo přijde na app.makej.eu rovnou (záložka, napsaná adresa), skončí tady.
+       Dřív to bylo 302 na makej.eu, jenže pak se člověk musel na webu teprve
+       prokliknout k přihlašovacímu okýnku.
+
+       Vzhled je ten samý jako přihlašovací okno na webu (`.modal` ve style.css):
+       modrá karta #0020F6 se světlem shora, bílá pilulka, průsvitná pole.
+       Rozdíl je jen v tom, že stránka pod kartou je bílá, ne tmavá.
+
+       POZOR: hodnoty jsou opsané ze `style.css` (blok `.modal, #login-modal`).
+       Sdílet to nejde — `style.css` je marketingový web se vším ostatním
+       a tahat ho sem jen kvůli jedné kartě by bylo 200 kB navíc. Když se
+       okno na webu překreslí, musí se projít i tohle. */
+    :root { color-scheme: light; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: #fff; color: #14161C;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      min-height: 100svh; padding: 24px 16px;
+    }
+
+    /* ── Modrá karta ── */
+    .ap-karta {
+      background: radial-gradient(90% 55% at 50% -14%, rgba(150,168,255,.42), rgba(150,168,255,0) 70%), #0020F6;
+      color: #fff; border: 0; border-radius: 28px;
+      padding: 44px 40px 34px;
+      width: min(440px, 100%);
+      box-shadow: 0 30px 60px -30px rgba(0,32,246,.45);
+      /* `margin: auto`, ne `align-items: center` na body — při centrování flexem
+         se obsah vyšší než okno ořízne shora a k hornímu kraji se nedá
+         doscrollovat. S auto okraji se vystředí a zároveň zůstane dosažitelný. */
+      margin: auto;
+    }
+    .ap-karta[hidden] { display: none; }
+
+    /* Wordmark jako v appce — bílý, bez gradientu */
+    .ap-logo {
+      font-family: 'League Spartan', 'Inter', sans-serif; font-size: 40px; font-weight: 700;
+      letter-spacing: -.035em; line-height: 1; text-align: center;
+      margin: 0 0 20px; color: #fff;
+    }
+    .ap-nadpis {
+      font-family: 'League Spartan', 'Inter', sans-serif; font-size: 26px; font-weight: 700;
+      letter-spacing: -.015em; line-height: 1.12; text-align: center;
+      color: #fff; margin: 0 0 6px;
+    }
+    /* Nejsvětlejší text na modré je #C7D0FF (kontrast 5,5 : 1) — jako v appce */
+    .ap-podnadpis {
+      color: #C7D0FF; font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+      text-align: center; margin: 0 0 26px;
+    }
+
+    .ap-chyba {
+      background: rgba(255,154,166,.16); border: 1.5px solid rgba(255,154,166,.6);
+      color: #fff; border-radius: 14px; padding: 10px 14px;
+      font-size: .875rem; font-weight: 600; margin-bottom: 14px; display: none;
+    }
+    .ap-chyba.je { display: block; }
+
+    .ap-pole { margin-bottom: 14px; }
+    .ap-label {
+      display: block; color: #C7D0FF; font-size: 13px; font-weight: 700;
+      margin: 0 0 7px 4px;
+    }
+    .ap-vstup {
+      width: 100%; background: rgba(255,255,255,.1);
+      border: 1.5px solid rgba(255,255,255,.56); border-radius: 15px;
+      padding: 15px 16px; color: #fff;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      font-size: 15.5px; font-weight: 600;
+      outline: none; transition: background .2s, border-color .2s;
+    }
+    .ap-vstup::placeholder { color: #C7D0FF; font-weight: 500; }
+    .ap-vstup:focus { background: rgba(255,255,255,.16); border-color: #fff; }
+    /* Automatické vyplnění v Chromu by pole přebarvilo na světle modrou s tmavým textem */
+    .ap-vstup:-webkit-autofill, .ap-vstup:-webkit-autofill:hover, .ap-vstup:-webkit-autofill:focus {
+      -webkit-text-fill-color: #fff; caret-color: #fff;
+      -webkit-box-shadow: 0 0 0 100px #1a36f7 inset; transition: background-color 99999s;
+    }
+    .ap-hint { color: #C7D0FF; font-size: 12px; margin: 7px 0 0 4px; }
+
+    .ap-pamatovat {
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      color: #fff; font-size: 14px; font-weight: 600; margin: 4px 0 0 4px;
+    }
+    .ap-pamatovat input {
+      width: 18px; height: 18px; margin: 0; flex-shrink: 0;
+      accent-color: #fff; cursor: pointer;
+    }
+
+    /* Hlavní tlačítko — bílá pilulka s modrým textem jako „Přihlásit se" v appce */
+    .ap-hlavni {
+      width: 100%; display: flex; align-items: center; justify-content: center;
+      background: #fff; color: #0020F6; border: 0; border-radius: 999px;
+      padding: 16px; margin-top: 10px; cursor: pointer;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      font-size: 16px; font-weight: 800;
+      box-shadow: 0 14px 24px -14px rgba(0,0,0,.55);
+      transition: background .2s, transform .2s, box-shadow .2s;
+    }
+    .ap-hlavni:hover { background: #EEF1FF; transform: translateY(-1px); box-shadow: 0 16px 26px -14px rgba(0,0,0,.6); }
+    .ap-hlavni:active { transform: scale(.98); }
+    .ap-hlavni:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .ap-delic {
+      display: flex; align-items: center; gap: 1rem;
+      color: #C7D0FF; font-size: 12.5px; font-weight: 600; margin: 20px 0;
+    }
+    .ap-delic::before, .ap-delic::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.22);
+    }
+
+    /* Google podle jeho pravidel značky: bílé pozadí, obrys #747775, text #1f1f1f */
+    .ap-google {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: #fff; color: #1f1f1f; border: 0;
+      box-shadow: inset 0 0 0 1px #747775; border-radius: 14px;
+      height: 48px; padding: 0 16px; cursor: pointer;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      font-size: 16px; font-weight: 500;
+      transition: background .2s;
+    }
+    .ap-google:hover { background: #f7f8f8; }
+    .ap-google:disabled { opacity: .6; cursor: not-allowed; }
+
+    .ap-prepnuti { color: #C7D0FF; font-size: 14px; text-align: center; margin: 22px 0 0; }
+    .ap-prepnuti a { color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+
+    /* Dokud nevíme, jestli je člověk přihlášený, nesmí formulář probliknout —
+       jinak by ho na zlomek sekundy viděl i ten, koho to rovnou pustí dál. */
+    .ap-cekani {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid rgba(0,32,246,.15); border-top-color: #0020F6;
+      animation: apOtoc .7s linear infinite;
+      margin: auto;   /* stejně jako karta — body už nic necentruje */
+    }
+    @keyframes apOtoc { to { transform: rotate(360deg); } }
+    .ap-cekani[hidden] { display: none; }
+    @media (prefers-reduced-motion: reduce) { .ap-cekani { animation-duration: 2s; } }
+
+    @media (max-width: 480px) {
+      .ap-karta { padding: 34px 22px 26px; border-radius: 24px; }
+      .ap-logo { font-size: 38px; }
+      /* Cookie lišta je na mobilu na tři řádky a sedí přes spodek karty —
+         bez téhle rezervy by „Pokračovat s Google" zakrývala, dokud na ni
+         člověk neodpoví. */
+      body { padding-bottom: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ap-cekani" id="cekani" role="status" aria-label="Načítáme"></div>
+
+  <main class="ap-karta" id="karta" hidden>
+    <div class="ap-logo">Makej</div>
+    <h1 class="ap-nadpis">Přihlásit se</h1>
+    <p class="ap-podnadpis">Vítej zpět! Přihlaš se ke svému účtu.</p>
+    <div class="ap-chyba" id="chyba" role="alert"></div>
+
+    <form id="form" novalidate>
+      <div class="ap-pole">
+        <label class="ap-label" for="email">Email</label>
+        <input class="ap-vstup" type="email" id="email" placeholder="tvuj@email.cz" autocomplete="email" required />
+      </div>
+      <div class="ap-pole">
+        <label class="ap-label" for="heslo">Heslo</label>
+        <input class="ap-vstup" type="password" id="heslo" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+      <div class="ap-pole" id="pole-klic">
+        <label class="ap-label" for="klic">Přístupový klíč</label>
+        <input class="ap-vstup" type="text" id="klic" placeholder="Zadej klíč" inputmode="numeric" autocomplete="off" />
+        <p class="ap-hint">Pouze pro oficiální testovací a vývojářské účty.</p>
+      </div>
+      <label class="ap-pamatovat" for="pamatovat">
+        <input type="checkbox" id="pamatovat" checked /><span>Zůstat přihlášen</span>
+      </label>
+      <button type="submit" class="ap-hlavni" id="odeslat">Přihlásit se</button>
+    </form>
+
+    <div class="ap-delic"><span>nebo</span></div>
+
+    <button class="ap-google" id="google">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.6 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.3C29.4 35.5 26.8 36.5 24 36.5c-5.2 0-9.6-3.4-11.2-8l-6.6 5C9.7 39.7 16.3 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.3C37.5 39.7 44 35.4 44 24c0-1.3-.1-2.6-.4-3.9z"/>
+      </svg>
+      Pokračovat s Google
+    </button>
+
+    <!-- PŘED SPUŠTĚNÍM vede na předregistraci, ne na rovnou registraci: účty
+         se zatím nezakládají volně, sbíráme e-maily. `#predregistrace` sjede
+         na sekci a rozbalí ji — bez kotvy by člověk spadl na úvodku a musel
+         ji hledat sám (obsluha je ve `script.js` na webu).
+         PO SPUŠTĚNÍ sem patří `https://makej.eu/?registrace=1`, což otevře
+         registrační okno rovnou; ta obsluha už na webu připravená je. -->
+    <p class="ap-prepnuti">Nemáš účet? <a href="https://makej.eu/#predregistrace">Zaregistruj se</a></p>
+  </main>
+
+  <script>
+  (function () {
+    var SUPABASE_URL = 'https://cxegfwfbgcgpwerfbvra.supabase.co';
+    var SUPABASE_ANON_KEY = 'sb_publishable_N_BIwMCTD6ZOTrtBl3juyw_CGIQ_lvh';
+    // Stejný storageKey i úložiště jako web a dashboard — jinak by se session
+    // nesdílela a přihlášení tady by v dashboardu neplatilo.
+    var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, storageKey: 'makej-auth', storage: window.mkAuthUloziste }
+    });
+
+    // ─── Přístupový klíč (pre-launch) ─────────────────────────────────────────
+    // Totéž co na webu a ve /worker/. Kdo klíč zadal na makej.eu, má ho
+    // v cookie pro celou doménu (mkBrana) a tady už se neptáme.
+    //   ⇒ ZMĚNIT KLÍČ = uprav ACCESS_KEY.   ⇒ NAOSTRO = dej ACCESS_KEY na ''.
+    var ACCESS_KEY = '8939';
+    var ACCESS_LOCKED_MSG =
+      'Spouštíme brzy — zrovna na tom makáme. Jakmile bude hotovo, dáme ti vědět e-mailem.';
+    var branaHotova = !ACCESS_KEY || (window.mkBrana && window.mkBrana.precti() === ACCESS_KEY);
+
+    var karta    = document.getElementById('karta');
+    var cekani   = document.getElementById('cekani');
+    var chyba    = document.getElementById('chyba');
+    var poleKlic = document.getElementById('pole-klic');
+    var odeslat  = document.getElementById('odeslat');
+    var google   = document.getElementById('google');
+
+    if (branaHotova) poleKlic.hidden = true;
+
+    function klicOk() {
+      if (branaHotova) return true;
+      return document.getElementById('klic').value.trim() === ACCESS_KEY;
+    }
+    function ukazChybu(t) { chyba.textContent = t; chyba.classList.add('je'); }
+    function smazChybu()  { chyba.classList.remove('je'); }
+
+    // ─── Kam po přihlášení ────────────────────────────────────────────────────
+    // Role je v metadatech uživatele. Kdo ji nemá, ještě si nevybral — rozcestník
+    // „jsem brigádník / jsem firma" je na webu, tak ho tam pošleme.
+    function kamDal(user) {
+      var role = user && user.user_metadata && user.user_metadata.role;
+      if (!role) return 'https://makej.eu/';
+      // ?od= je okamžik kliknutí: podle něj drží modrá obrazovka dashboardu
+      // nejméně 5 s. Přes sessionStorage to nejde ani tady — je to sice ta
+      // samá doména, ale /employer/ si ho čte z adresy (viz jeho index.html).
+      return (role === 'employer' ? '/employer/' : '/worker/') + '?od=' + Date.now();
+    }
+
+    // Modrá se rozlije kruhem od tlačítka, stejně jako na webu, a teprve pak
+    // se přejde. Bez toho by bílá stránka skočila rovnou na modrý zámek.
+    function prejdi(cil, odkud) {
+      if (document.querySelector('.nahr-plocha')) return;
+      var plocha = document.createElement('div');
+      plocha.className = 'nahr-plocha nahr-plocha--prechod';
+      if (odkud) {
+        plocha.style.setProperty('--x', odkud.x + 'px');
+        plocha.style.setProperty('--y', odkud.y + 'px');
+      }
+      plocha.setAttribute('role', 'status');
+      plocha.setAttribute('aria-label', 'Nahráváme vaše údaje');
+      document.body.appendChild(plocha);
+      // Dva snímky: prohlížeč musí nejdřív vykreslit nulový kruh, jinak
+      // by přechod přeskočil rovnou na konec.
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { plocha.classList.add('je'); });
+      });
+      var tiche = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(function () { window.location.replace(cil); }, tiche ? 150 : 850);
+    }
+
+    function strediskoTlacitka(el) {
+      var r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }
+
+    // ─── Je už přihlášený? ────────────────────────────────────────────────────
+    // Tohle běží i po návratu z Google (Supabase si session vytáhne z adresy),
+    // takže se o přesměrování po OAuth nemusíme starat zvlášť.
+    var poslanoDal = false;
+    function posliDal(user, odkud) {
+      if (poslanoDal) return;
+      poslanoDal = true;
+      var cil = kamDal(user);
+      // Na web (chybí role) se jde rovnou — modrá patří jen k dashboardu.
+      if (cil.indexOf('http') === 0) { window.location.replace(cil); return; }
+      prejdi(cil, odkud);
+    }
+
+    sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (session && session.user) { posliDal(session.user, null); return; }
+      // Nikdo přihlášený → ukázat formulář.
+      cekani.hidden = true;
+      karta.hidden = false;
+      var prvni = document.getElementById(branaHotova ? 'email' : 'klic');
+      if (prvni && matchMedia('(min-width: 700px)').matches) prvni.focus();
+    }).catch(function () {
+      cekani.hidden = true;
+      karta.hidden = false;
+    });
+
+    // ─── Přihlášení emailem ───────────────────────────────────────────────────
+    document.getElementById('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      smazChybu();
+      if (!klicOk()) { ukazChybu(ACCESS_LOCKED_MSG); return; }
+      if (ACCESS_KEY && window.mkBrana) window.mkBrana.uloz(ACCESS_KEY);
+
+      var email = document.getElementById('email').value.trim();
+      var heslo = document.getElementById('heslo').value;
+      if (!email || !heslo) { ukazChybu('Zadejte email a heslo.'); return; }
+
+      // Změřit teď: po úspěchu se karta schová a tlačítko už nejde najít.
+      var odkud = strediskoTlacitka(odeslat);
+      odeslat.disabled = true;
+      odeslat.textContent = 'Přihlašování...';
+
+      var pamatovat = document.getElementById('pamatovat');
+      if (window.mkNastavPamatovani) window.mkNastavPamatovani(!pamatovat || pamatovat.checked);
+
+      sb.auth.signInWithPassword({ email: email, password: heslo }).then(function (res) {
+        if (res.error) {
+          ukazChybu(prelozChybu(res.error.message));
+          odeslat.disabled = false;
+          odeslat.textContent = 'Přihlásit se';
+          return;
+        }
+        posliDal(res.data.user, odkud);
+      });
+    });
+
+    // ─── Přihlášení přes Google ───────────────────────────────────────────────
+    google.addEventListener('click', function () {
+      smazChybu();
+      if (!klicOk()) { ukazChybu(ACCESS_LOCKED_MSG); return; }
+      if (ACCESS_KEY && window.mkBrana) window.mkBrana.uloz(ACCESS_KEY);
+      var pamatovat = document.getElementById('pamatovat');
+      if (window.mkNastavPamatovani) window.mkNastavPamatovani(!pamatovat || pamatovat.checked);
+      google.disabled = true;
+      sb.auth.signInWithOAuth({
+        provider: 'google',
+        // Zpátky sem: kontrola session výš pak člověka pošle dál podle role.
+        options: { redirectTo: window.location.origin + '/' }
+      }).then(function (res) {
+        if (res && res.error) {
+          ukazChybu(prelozChybu(res.error.message));
+          google.disabled = false;
+        }
+      });
+    });
+
+    // Stejné překlady jako translateAuthError ve script.js na webu.
+    function prelozChybu(msg) {
+      msg = msg || '';
+      if (msg.indexOf('Invalid login credentials') >= 0)  return 'Nesprávný email nebo heslo.';
+      if (msg.indexOf('missing') >= 0 && (msg.indexOf('email') >= 0 || msg.indexOf('phone') >= 0)) return 'Zadejte email a heslo.';
+      if (msg.indexOf('Email not confirmed') >= 0)        return 'Nejdřív potvrď svůj email.';
+      if (msg.indexOf('rate limit') >= 0)                 return 'Příliš mnoho pokusů, zkus to za chvíli.';
+      if (msg.indexOf('invalid') >= 0 && msg.indexOf('email') >= 0) return 'Zadejte platný email.';
+      if (msg.indexOf('Email address') >= 0 && msg.indexOf('invalid') >= 0) return 'Zadejte platný email.';
+      if (msg.indexOf('Signup is disabled') >= 0)         return 'Registrace je momentálně nedostupná.';
+      return msg;
+    }
+  })();
+  </script>
+</body>
+</html>

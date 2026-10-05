@@ -1,3 +1,9 @@
-# Kořen app.makej.eu nevede nikam — přihlášení i rozcestník jsou na webu.
-# Podle role se pak člověk dostane na /employer/ nebo /worker/.
-/   https://makej.eu/   302
+# Kořen app.makej.eu = přihlašovací stránka (index.html). Dřív tu bylo 302 na
+# makej.eu, jenže pak se člověk, který má app.makej.eu v záložkách, musel na
+# webu teprve prokliknout k přihlašovacímu okýnku. Teď se z přihlášení dostane
+# podle role rovnou na /employer/ nebo /worker/.
+#
+# Registrace a rozcestník „jsem brigádník / jsem firma" zůstávají na webu —
+# přihlašovací stránka je úmyslně jen vstup a odkazuje tam.
+#
+# Žádné pravidlo tady být nemusí, soubor zůstává kvůli téhle poznámce.
