@@ -247,13 +247,17 @@
     });
 
     // ─── Přístupový klíč (pre-launch) ─────────────────────────────────────────
-    // Totéž co na webu a ve /worker/. Kdo klíč zadal na makej.eu, má ho
-    // v cookie pro celou doménu (mkBrana) a tady už se neptáme.
+    // Totéž co na webu a ve /worker/.
     //   ⇒ ZMĚNIT KLÍČ = uprav ACCESS_KEY.   ⇒ NAOSTRO = dej ACCESS_KEY na ''.
+    //
+    // POLE SE UKAZUJE VŽDY a klíč se musí pokaždé napsat — stejně jako
+    // v přihlašovacím okně na webu. Zkoušelo se schovávat ho, když už je klíč
+    // v cookie (mkBrana), ale vypadalo to, že pole z přihlášení zmizelo.
+    // Cookie se dál ukládá, jen kvůli /employer/ a /worker/, kam se po
+    // přihlášení přechází — tam se na klíč ptát znovu nemá.
     var ACCESS_KEY = '8939';
     var ACCESS_LOCKED_MSG =
       'Spouštíme brzy — zrovna na tom makáme. Jakmile bude hotovo, dáme ti vědět e-mailem.';
-    var branaHotova = !ACCESS_KEY || (window.mkBrana && window.mkBrana.precti() === ACCESS_KEY);
 
     var karta    = document.getElementById('karta');
     var cekani   = document.getElementById('cekani');
@@ -262,10 +266,11 @@
     var odeslat  = document.getElementById('odeslat');
     var google   = document.getElementById('google');
 
-    if (branaHotova) poleKlic.hidden = true;
+    // Po spuštění (ACCESS_KEY = '') žádná brána není, pak pole nemá co dělat.
+    if (!ACCESS_KEY) poleKlic.hidden = true;
 
     function klicOk() {
-      if (branaHotova) return true;
+      if (!ACCESS_KEY) return true;
       return document.getElementById('klic').value.trim() === ACCESS_KEY;
     }
     function ukazChybu(t) { chyba.textContent = t; chyba.classList.add('je'); }
@@ -329,7 +334,7 @@
       // Nikdo přihlášený → ukázat formulář.
       cekani.hidden = true;
       karta.hidden = false;
-      var prvni = document.getElementById(branaHotova ? 'email' : 'klic');
+      var prvni = document.getElementById(ACCESS_KEY ? 'klic' : 'email');
       if (prvni && matchMedia('(min-width: 700px)').matches) prvni.focus();
     }).catch(function () {
       cekani.hidden = true;
